@@ -1,96 +1,104 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+body { 
+    margin: 0; 
+    overflow: hidden; 
+    background-color: #000; 
+    font-family: 'Courier New', Courier, monospace; 
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+/* UI Overlay container */
+#ui-container {
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    pointer-events: none; 
+    display: flex; 
+    flex-direction: column;
+    justify-content: space-between; 
+    padding: 20px; 
+    box-sizing: border-box;
 }
 
+/* Tiêu đề chính */
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+    color: #fff; 
+    text-transform: uppercase; 
+    letter-spacing: 5px;
+    text-shadow: 0 0 10px #d400ff; 
+    font-size: 24px; 
+    margin: 0; 
+    pointer-events: auto; /* Cho phép chọn text */
 }
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.subtitle { 
+    color: #aab; 
+    font-size: 12px; 
+    margin-top: 5px; 
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vanilla:hover {
-  filter: drop-shadow(0 0 2em #3178c6aa);
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+/* Hộp thoại cốt truyện (Story Box) */
+#story-box {
+    position: absolute; 
+    bottom: 40px; 
+    right: 40px; 
+    width: 400px;
+    background: rgba(10, 10, 30, 0.85); 
+    border: 1px solid #666;
+    padding: 20px; 
+    color: #eef; 
+    display: none; /* Mặc định ẩn */
+    pointer-events: auto; 
+    border-left: 4px solid #d400ff; /* Viền tím neon */
+    backdrop-filter: blur(8px); 
+    transition: opacity 0.5s;
+    box-shadow: 0 0 20px rgba(212, 0, 255, 0.2);
+    z-index: 10;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+#story-title { 
+    color: #d400ff; 
+    font-weight: bold; 
+    margin-bottom: 10px; 
+    font-size: 16px; 
+    text-transform: uppercase; 
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+#story-content { 
+    font-size: 14px; 
+    line-height: 1.6; 
+    max-height: 300px; 
+    overflow-y: auto; 
+    white-space: pre-wrap; 
+}
+
+/* Nút đóng hộp thoại */
+#close-btn { 
+    position: absolute; 
+    top: 10px; 
+    right: 10px; 
+    cursor: pointer; 
+    color: #888; 
+    font-weight: bold; 
+}
+
+#close-btn:hover { 
+    color: #fff; 
+}
+
+/* Màn hình Loading */
+#loader {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: #000;
+    color: #d400ff; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 999;
+    font-size: 18px;
+    letter-spacing: 2px;
 }

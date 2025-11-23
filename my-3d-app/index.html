@@ -1,13 +1,149 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>my-3d-app</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGNES: The Ocean Dream</title>
+    <style>
+        /* --- EMBEDDED CSS --- */
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #000; 
+            font-family: 'Courier New', Courier, monospace; 
+        }
+
+        canvas {
+            display: block;
+            position: fixed; top: 0; left: 0; z-index: 0;
+        }
+
+        #ui-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; box-sizing: border-box;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #fff; text-transform: uppercase; letter-spacing: 5px;
+            text-shadow: 0 0 10px #d400ff; font-size: 24px; margin: 0; 
+            pointer-events: auto; 
+        }
+
+        .subtitle { 
+            color: #aab; font-size: 12px; margin-top: 5px; 
+            text-shadow: 0 0 5px #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #story-box {
+            position: absolute; bottom: 40px; right: 40px; width: 400px; max-width: 80%;
+            background: rgba(10, 10, 30, 0.85); border: 1px solid #666;
+            padding: 20px; color: #eef; display: none;
+            pointer-events: auto; border-left: 4px solid #d400ff;
+            backdrop-filter: blur(8px); transition: opacity 0.5s;
+            box-shadow: 0 0 20px rgba(212, 0, 255, 0.2);
+            z-index: 20; border-radius: 4px;
+        }
+
+        #story-title { 
+            color: #d400ff; font-weight: bold; margin-bottom: 10px; font-size: 16px; 
+            text-transform: uppercase; letter-spacing: 2px;
+            border-bottom: 1px solid rgba(212, 0, 255, 0.3); padding-bottom: 5px;
+        }
+
+        #story-content { 
+            font-size: 14px; line-height: 1.6; max-height: 300px; 
+            overflow-y: auto; white-space: pre-wrap; 
+        }
+        #story-content::-webkit-scrollbar { width: 6px; }
+        #story-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        #story-content::-webkit-scrollbar-thumb { background: #d400ff; border-radius: 3px; }
+
+        #close-btn { 
+            position: absolute; top: 10px; right: 15px; cursor: pointer; 
+            color: #888; font-weight: bold; font-size: 18px;
+        }
+        #close-btn:hover { color: #fff; text-shadow: 0 0 5px #fff; }
+
+        /* --- LOADING SCREEN ANIMATION --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #050510; color: #d400ff; 
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; 
+            z-index: 999;
+        }
+
+        .loader-text {
+            font-size: 18px; letter-spacing: 3px; text-transform: uppercase;
+            animation: textGlitch 2s infinite;
+            margin-bottom: 20px;
+        }
+
+        .loader-bar {
+            width: 200px; height: 2px; background: #333;
+            position: relative; overflow: hidden;
+        }
+
+        .loader-progress {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: #00ffff;
+            box-shadow: 0 0 10px #00ffff;
+            animation: loadProgress 3s ease-in-out forwards;
+        }
+
+        @keyframes textGlitch {
+            0% { opacity: 1; text-shadow: 0 0 5px #d400ff; }
+            50% { opacity: 0.7; text-shadow: 2px 0 10px #00ffff, -2px 0 5px #d400ff; }
+            52% { opacity: 1; text-shadow: 0 0 5px #d400ff; }
+            100% { opacity: 1; text-shadow: 0 0 5px #d400ff; }
+        }
+
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            50% { width: 40%; }
+            70% { width: 60%; }
+            100% { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="loader-text">DREDGING MEMORIES...</div>
+        <div class="loader-bar">
+            <div class="loader-progress"></div>
+        </div>
+    </div>
+
+    <div id="ui-container">
+        <div>
+            <h1>Agnes</h1>
+            <div class="subtitle">Endless Ocean • Fragments</div>
+        </div>
+    </div>
+
+    <div id="story-box">
+        <div id="close-btn">X</div>
+        <div id="story-title">Title</div>
+        <div id="story-content">Content...</div>
+    </div>
+
+    <!-- Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+                "gsap": "https://unpkg.com/gsap@3.12.5/index.js"
+            }
+        }
+    </script>
+
+    <!-- Main Script -->
+    <script type="module" src="./src/main.ts"></script>
+</body>
 </html>
