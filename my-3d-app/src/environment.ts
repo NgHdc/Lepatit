@@ -84,7 +84,7 @@ export function setupEnvironment(scene: THREE.Scene, renderer: THREE.WebGLRender
 
     // 4. STARDUST (Bụi bay gần - Floating Particles)
     const stardust = createFloatingDust();
-    scene.add(stardust);
+    // scene.add(stardust);
 
     const ambientLight = new THREE.AmbientLight(CONFIG.colors.skyBottom, 0.5);
     scene.add(ambientLight);

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IN SEHNSUCHT - The Reveal</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        #canvas-container { width: 100%; height: 100vh; }
+        #ui {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: 'Courier New', Courier, monospace;
+            pointer-events: none;
+            user-select: none;
+        }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; text-transform: uppercase; }
+        p { margin: 5px 0 0 0; font-size: 0.8rem; }
+        .glitch { animation: glitch 1s linear infinite; }
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px,0) skew(0deg); }
+            4%, 60% { transform: translate(-2px,0) skew(0deg); }
+            62% { transform: translate(0,0) skew(5deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h1 class="glitch">SYSTEM FAILURE</h1>
+        <p>LOCATION: LUNA SERVER [AGNES]</p>
+        <p>TARGET: EARTH [CONNECTION UNSTABLE]</p>
+    </div>
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+        import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+        // --- SETUP ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Fog đen để hòa trộn đường chân trời vào vũ trụ
+        scene.fog = new THREE.FogExp2(0x050505, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Vị trí camera: Đứng thấp sát mặt đất (như góc nhìn của An)
+        camera.position.set(0, 2, 10);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Controls (Giới hạn góc nhìn để giữ cinematic)
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enablePan = false;
+        controls.enableZoom = false;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; // Không cho nhìn xuống dưới đất quá nhiều
+        controls.minPolarAngle = Math.PI / 3; // Không cho nhìn lên quá cao
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.2;
+
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 1); // Ánh sáng yếu
+        scene.add(ambientLight);
+
+        // Ánh sáng từ Trái Đất hắt lại (màu cam đỏ của sự tàn phá)
+        const earthLight = new THREE.DirectionalLight(0xffaa33, 2);
+        earthLight.position.set(0, 10, -50);
+        scene.add(earthLight);
+
+        // --- OBJECTS ---
+
+        // 1. THE STARS (Vũ trụ tĩnh lặng)
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 2000;
+        const posArray = new Float32Array(starCount * 3);
+        for(let i = 0; i < starCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 300;
+        }
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const starMaterial = new THREE.PointsMaterial({ size: 0.15, color: 0xffffff });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
+
+        // 2. THE RUINED EARTH (Trái đất tàn khốc)
+        // Sphere geometry
+        const earthGeo = new THREE.SphereGeometry(40, 64, 64);
+        
+        // Custom shader đơn giản để tạo bề mặt hành tinh chết (Nâu/Xám/Lửa)
+        const earthMat = new THREE.MeshStandardMaterial({
+            color: 0x553333, // Màu nền nâu đỏ
+            emissive: 0x220505, // Tự phát sáng nhẹ màu đỏ máu
+            roughness: 0.8,
+            metalness: 0.2,
+            flatShading: false
+        });
+        
+        const earth = new THREE.Mesh(earthGeo, earthMat);
+        // Đặt Trái đất xa và thấp để bị đường chân trời che khuất
+        earth.position.set(0, 5, -100); 
+        scene.add(earth);
+
+        // Atmosphere glow (Vòng hào quang mờ nhạt)
+        const atmoGeo = new THREE.SphereGeometry(42, 32, 32);
+        const atmoMat = new THREE.MeshBasicMaterial({
+            color: 0xff4400,
+            transparent: true,
+            opacity: 0.1,
+            side: THREE.BackSide
+        });
+        const atmosphere = new THREE.Mesh(atmoGeo, atmoMat);
+        atmosphere.position.copy(earth.position);
+        scene.add(atmosphere);
+
+        // 3. THE MOON SURFACE / SHORE (Bờ biển Agnes đã mất lớp phủ giả lập)
+        const groundGeo = new THREE.PlaneGeometry(200, 200, 128, 128);
+        
+        // Vertex shader để tạo sóng (Sóng của chất lỏng làm mát, chậm và nặng nề)
+        const waterVertexShader = `
+            uniform float uTime;
+            varying vec2 vUv;
+            varying float vElevation;
+
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+                
+                // Tạo sóng hình sin đơn giản nhưng nhiều lớp
+                float elevation = sin(pos.x * 2.0 + uTime * 0.5) * 0.5;
+                elevation += sin(pos.y * 1.5 + uTime * 0.3) * 0.5;
+                
+                pos.z += elevation;
+                vElevation = elevation;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+            }
+        `;
+
+        const waterFragmentShader = `
+            uniform float uTime;
+            varying float vElevation;
+            
+            void main() {
+                // Màu của Coolant: Xanh đen đậm pha chút xám bạc
+                vec3 deepColor = vec3(0.05, 0.05, 0.1);
+                vec3 surfaceColor = vec3(0.1, 0.2, 0.3);
+                
+                float mixStrength = (vElevation + 1.0) * 0.5;
+                vec3 color = mix(deepColor, surfaceColor, mixStrength);
+                
+                gl_FragColor = vec4(color, 0.9);
+            }
+        `;
+
+        const waterMat = new THREE.ShaderMaterial({
+            vertexShader: waterVertexShader,
+            fragmentShader: waterFragmentShader,
+            uniforms: {
+                uTime: { value: 0 }
+            },
+            transparent: true,
+            wireframe: false
+        });
+
+        const water = new THREE.Mesh(groundGeo, waterMat);
+        water.rotation.x = -Math.PI / 2; // Nằm ngang
+        water.position.y = -1; // Thấp hơn camera
+        scene.add(water);
+
+        // 4. MOON ROCKS (Để tạo cảm giác bờ bãi)
+        const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
+        
+        for(let i=0; i<20; i++) {
+            const rock = new THREE.Mesh(rockGeo, rockMat);
+            rock.position.x = (Math.random() - 0.5) * 40;
+            rock.position.z = (Math.random() - 0.5) * 20 - 10; // Gần camera
+            rock.position.y = -1.5;
+            rock.scale.setScalar(Math.random() * 0.5 + 0.5);
+            rock.rotation.set(Math.random(), Math.random(), Math.random());
+            scene.add(rock);
+        }
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const elapsedTime = clock.getElapsedTime();
+
+            // Update Water Wave Uniforms
+            waterMat.uniforms.uTime.value = elapsedTime;
+
+            // Rotate Earth slowly (Hành tinh chết quay chậm chạp)
+            earth.rotation.y += 0.0005;
+            earth.rotation.x += 0.0001;
+
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

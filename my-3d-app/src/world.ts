@@ -32,7 +32,7 @@ function createSketchMesh(geometry: THREE.BufferGeometry, color: number, name: s
 
 export function setupWorld(scene: THREE.Scene): THREE.Group {
     const roomGroup = new THREE.Group();
-    scene.add(roomGroup);
+    // scene.add(roomGroup);
 
     // --- 1. SÀN NHÀ (THE FLOATING ISLE) ---
     // Tạo sàn mỏng như một chiếc bè
