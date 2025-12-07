@@ -5,9 +5,10 @@ import gsap from 'gsap';
 import { STORY_DB } from './config';
 import { setupEnvironment } from './environment';
 import type { Environment } from './environment';
+// Import đúng hàm getWaterHeightAt
 import { setupWater, getWaterHeightAt } from './water';
-// WaveObject is not exported from './water' — declare a local type compatible with usage
-type WaveObject = { update: (delta: number) => void; mesh: THREE.Object3D };
+// Import type WaveObject từ water luôn (đã export ở file water.ts rồi)
+import type { WaveObject } from './water'; 
 import { setupWorld } from './world';
 
 let scene: THREE.Scene;
@@ -21,7 +22,8 @@ let env: Environment;
 
 let accumulatedTime = 0;
 
-function init() {
+// Đổi init thành async
+async function init() {
     const container = document.body;
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -32,7 +34,6 @@ function init() {
     container.appendChild(renderer.domElement);
 
     scene = new THREE.Scene();
-    // Màu nền background sẽ bị che bởi SkyBox, nhưng cứ set cho chắc
     scene.background = new THREE.Color(0x000022);
 
     env = setupEnvironment(scene, renderer);
@@ -47,18 +48,26 @@ function init() {
     controls.maxPolarAngle = Math.PI * 0.48; 
     controls.enableDamping = true;
     
-    wave = setupWater(scene);
-    roomGroup = setupWorld(scene);
+    // --- SỬA ĐOẠN NÀY: Dùng await ---
+    try {
+        // Chờ load xong nước (model 3D)
+        wave = await setupWater(scene);
+        
+        // Sau khi có nước rồi mới setup các thứ khác
+        roomGroup = setupWorld(scene);
 
-    window.addEventListener('resize', onWindowResize);
-    window.addEventListener('pointerdown', onPointerDown);
+        window.addEventListener('resize', onWindowResize);
+        window.addEventListener('pointerdown', onPointerDown);
 
-    clock = new THREE.Clock();
-    
-    const loader = document.getElementById('loader');
-    if (loader) loader.style.display = 'none';
+        clock = new THREE.Clock();
+        
+        const loader = document.getElementById('loader');
+        if (loader) loader.style.display = 'none';
 
-    animate();
+        animate(); // Bắt đầu vòng lặp
+    } catch (error) {
+        console.error("Không thể khởi tạo ứng dụng:", error);
+    }
 }
 
 function onWindowResize() {
@@ -83,6 +92,7 @@ function animate() {
             const raftZ = 0; 
             const waterBaseY = -1.5;
 
+            // Hàm này giờ đã tồn tại và import đúng
             const waveHeight = getWaterHeightAt(raftX, raftZ, accumulatedTime);
             const targetY = waterBaseY + waveHeight + 1.2; 
             roomGroup.position.y += (targetY - roomGroup.position.y) * 0.1;
@@ -128,12 +138,13 @@ function onPointerDown(event: PointerEvent) {
     if (intersects.length > 0) {
         let target = intersects[0].object;
         if (target.type === 'LineSegments' && target.parent) target = target.parent;
-        if (target === wave.mesh) target.name = "Water";
+        // Kiểm tra wave và wave.mesh tồn tại
+        if (wave && target === wave.mesh) target.name = "Water";
 
         if (STORY_DB[target.name]) {
             showStory(target.name);
-            if(target.rotation && target !== wave.mesh && target.name !== "Moon") {
-                 gsap.to(target.rotation, { y: target.rotation.y + Math.PI, duration: 1, ease: "back.out(1.7)" });
+            if(target.rotation && (!wave || target !== wave.mesh) && target.name !== "Moon") {
+                  gsap.to(target.rotation, { y: target.rotation.y + Math.PI, duration: 1, ease: "back.out(1.7)" });
             }
         }
     }
