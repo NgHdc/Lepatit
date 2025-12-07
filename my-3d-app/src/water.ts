@@ -167,7 +167,7 @@ export function setupWater(scene: THREE.Scene): WaveObject {
     const WIDTH = 3;
     const DEPTH = 3;
     const HEIGHT = 15;
-    
+
     const TARGET_SURFACE_Y = -1.5;
     const MESH_Y = TARGET_SURFACE_Y - (HEIGHT / 2);
 
@@ -193,7 +193,7 @@ export function setupWater(scene: THREE.Scene): WaveObject {
     waterGroup.add(waterMesh);
 
     // 2. HỘP KÍNH (FLAT GLASS)
-    const glassGeo = new THREE.BoxGeometry(WIDTH, HEIGHT + 5, DEPTH); 
+    const glassGeo = new THREE.BoxGeometry(WIDTH, HEIGHT + 5, DEPTH);
     const glassMat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
@@ -202,24 +202,24 @@ export function setupWater(scene: THREE.Scene): WaveObject {
         depthWrite: false
     });
     const glassBox = new THREE.Mesh(glassGeo, glassMat);
-    glassBox.position.y = MESH_Y + 2.5; 
+    glassBox.position.y = MESH_Y + 2.5;
     glassBox.name = "Glass";
     waterGroup.add(glassBox);
 
     // Viền kính
     const edgesGeo = new THREE.EdgesGeometry(glassGeo);
-    const edgesMat = new THREE.LineBasicMaterial({ 
-        color: 0x66aaff, 
+    const edgesMat = new THREE.LineBasicMaterial({
+        color: 0x66aaff,
         linewidth: 2,
         transparent: true,
         opacity: 0.5
     });
     const edges = new THREE.LineSegments(edgesGeo, edgesMat);
-    glassBox.add(edges); 
+    glassBox.add(edges);
 
     // 3. UPDATE
     const update = (deltaTime: number) => {
-        waterMat.uniforms.u_time.value += deltaTime; 
+        waterMat.uniforms.u_time.value += deltaTime;
     };
 
     return { mesh: waterGroup, update };

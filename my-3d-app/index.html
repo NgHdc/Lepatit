@@ -1,115 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AGNES: The Ocean Dream</title>
+
+    <!-- Handwritten-style font for claymation feel -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Special+Elite&display=swap"
+        rel="stylesheet">
+
     <style>
-        /* --- EMBEDDED CSS --- */
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background-color: #000; 
-            font-family: 'Courier New', Courier, monospace; 
+        /* --- CLAYMATION GOTHIC STYLES --- */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0a0812;
+            font-family: 'Caveat', cursive;
+            /* Handwritten style */
         }
 
         canvas {
             display: block;
-            position: fixed; top: 0; left: 0; z-index: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
         }
 
         #ui-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; display: flex; flex-direction: column;
-            justify-content: space-between; padding: 20px; box-sizing: border-box;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
             z-index: 10;
         }
 
         h1 {
-            color: #fff; text-transform: uppercase; letter-spacing: 5px;
-            text-shadow: 0 0 10px #d400ff; font-size: 24px; margin: 0; 
-            pointer-events: auto; 
+            color: #f5e6c8;
+            /* Warm cream like moon */
+            text-transform: none;
+            /* More natural, hand-lettered */
+            letter-spacing: 3px;
+            text-shadow: 2px 2px 0 #3a2a1a, 0 0 15px rgba(245, 200, 150, 0.4);
+            font-size: 36px;
+            /* Larger for handwritten style */
+            margin: 0;
+            pointer-events: auto;
+            font-weight: 700;
         }
 
-        .subtitle { 
-            color: #aab; font-size: 12px; margin-top: 5px; 
-            text-shadow: 0 0 5px #00ffff;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+        .subtitle {
+            color: #a89070;
+            /* Warm clay color */
+            font-size: 16px;
+            margin-top: 8px;
+            text-shadow: 1px 1px 0 #1a1510;
+            text-transform: none;
+            letter-spacing: 1px;
+            font-family: 'Special Elite', cursive;
+            /* Typewriter for subtitle */
         }
 
         #story-box {
-            position: absolute; bottom: 40px; right: 40px; width: 400px; max-width: 80%;
-            background: rgba(10, 10, 30, 0.85); border: 1px solid #666;
-            padding: 20px; color: #eef; display: none;
-            pointer-events: auto; border-left: 4px solid #d400ff;
-            backdrop-filter: blur(8px); transition: opacity 0.5s;
-            box-shadow: 0 0 20px rgba(212, 0, 255, 0.2);
-            z-index: 20; border-radius: 4px;
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            width: 400px;
+            max-width: 80%;
+            background: rgba(26, 21, 16, 0.92);
+            /* Warm dark brown */
+            border: 2px solid #5a4a3a;
+            /* Clay border */
+            padding: 20px;
+            color: #e8dcd0;
+            /* Warm cream text */
+            display: none;
+            pointer-events: auto;
+            border-left: 4px solid #c8a070;
+            /* Warm gold accent */
+            backdrop-filter: blur(8px);
+            transition: opacity 0.5s;
+            box-shadow: 4px 4px 0 #1a1510, 0 0 20px rgba(200, 160, 112, 0.2);
+            z-index: 20;
+            border-radius: 2px;
+            /* Slightly sharp for handmade feel */
+            font-family: 'Special Elite', cursive;
         }
 
-        #story-title { 
-            color: #d400ff; font-weight: bold; margin-bottom: 10px; font-size: 16px; 
-            text-transform: uppercase; letter-spacing: 2px;
-            border-bottom: 1px solid rgba(212, 0, 255, 0.3); padding-bottom: 5px;
+        #story-title {
+            color: #c8a070;
+            /* Warm gold */
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 18px;
+            text-transform: none;
+            letter-spacing: 1px;
+            border-bottom: 2px solid rgba(200, 160, 112, 0.4);
+            padding-bottom: 8px;
+            font-family: 'Caveat', cursive;
         }
 
-        #story-content { 
-            font-size: 14px; line-height: 1.6; max-height: 300px; 
-            overflow-y: auto; white-space: pre-wrap; 
+        #story-content {
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
         }
-        #story-content::-webkit-scrollbar { width: 6px; }
-        #story-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
-        #story-content::-webkit-scrollbar-thumb { background: #d400ff; border-radius: 3px; }
 
-        #close-btn { 
-            position: absolute; top: 10px; right: 15px; cursor: pointer; 
-            color: #888; font-weight: bold; font-size: 18px;
+        #story-content::-webkit-scrollbar {
+            width: 6px;
         }
-        #close-btn:hover { color: #fff; text-shadow: 0 0 5px #fff; }
+
+        #story-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        #story-content::-webkit-scrollbar-thumb {
+            background: #d400ff;
+            border-radius: 3px;
+        }
+
+        #close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+            color: #888;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        #close-btn:hover {
+            color: #fff;
+            text-shadow: 0 0 5px #fff;
+        }
 
         /* --- LOADING SCREEN ANIMATION --- */
         #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #050510; color: #d400ff; 
-            display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #050510;
+            color: #d400ff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             z-index: 999;
         }
 
         .loader-text {
-            font-size: 18px; letter-spacing: 3px; text-transform: uppercase;
+            font-size: 18px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
             animation: textGlitch 2s infinite;
             margin-bottom: 20px;
         }
 
         .loader-bar {
-            width: 200px; height: 2px; background: #333;
-            position: relative; overflow: hidden;
+            width: 200px;
+            height: 2px;
+            background: #333;
+            position: relative;
+            overflow: hidden;
         }
 
         .loader-progress {
-            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
             background: #00ffff;
             box-shadow: 0 0 10px #00ffff;
             animation: loadProgress 3s ease-in-out forwards;
         }
 
         @keyframes textGlitch {
-            0% { opacity: 1; text-shadow: 0 0 5px #d400ff; }
-            50% { opacity: 0.7; text-shadow: 2px 0 10px #00ffff, -2px 0 5px #d400ff; }
-            52% { opacity: 1; text-shadow: 0 0 5px #d400ff; }
-            100% { opacity: 1; text-shadow: 0 0 5px #d400ff; }
+            0% {
+                opacity: 1;
+                text-shadow: 0 0 5px #d400ff;
+            }
+
+            50% {
+                opacity: 0.7;
+                text-shadow: 2px 0 10px #00ffff, -2px 0 5px #d400ff;
+            }
+
+            52% {
+                opacity: 1;
+                text-shadow: 0 0 5px #d400ff;
+            }
+
+            100% {
+                opacity: 1;
+                text-shadow: 0 0 5px #d400ff;
+            }
         }
 
         @keyframes loadProgress {
-            0% { width: 0%; }
-            50% { width: 40%; }
-            70% { width: 60%; }
-            100% { width: 100%; }
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 40%;
+            }
+
+            70% {
+                width: 60%;
+            }
+
+            100% {
+                width: 100%;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div id="loader">
@@ -125,6 +246,10 @@
             <div class="subtitle">Endless Ocean • Fragments</div>
         </div>
     </div>
+
+    <!-- Film Grain Overlay for claymation effect -->
+    <canvas id="grain-overlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; opacity: 0.15; mix-blend-mode: overlay;"></canvas>
 
     <div id="story-box">
         <div id="close-btn">X</div>
@@ -146,4 +271,5 @@
     <!-- Main Script -->
     <script type="module" src="./src/main.ts"></script>
 </body>
+
 </html>

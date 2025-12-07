@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config';
 
 export interface Environment {
-    skyMesh: THREE.Mesh; 
+    skyMesh: THREE.Mesh;
     lightSource: THREE.Vector3;
     moonMesh: THREE.Mesh;
     stars: THREE.Points;
@@ -39,8 +39,8 @@ const skyFragmentShader = `
 `;
 
 export function setupEnvironment(scene: THREE.Scene, renderer: THREE.WebGLRenderer): Environment {
-    
-    // 1. SKY
+
+    // 1. SKY (Gothic stepped gradient)
     const skyGeo = new THREE.SphereGeometry(4000, 32, 15);
     const skyMat = new THREE.ShaderMaterial({
         vertexShader: skyVertexShader,
@@ -49,26 +49,39 @@ export function setupEnvironment(scene: THREE.Scene, renderer: THREE.WebGLRender
             topColor: { value: new THREE.Color(CONFIG.colors.skyTop) },
             bottomColor: { value: new THREE.Color(CONFIG.colors.skyBottom) },
             offset: { value: 300 },
-            exponent: { value: 0.6 },
-            steps: { value: CONFIG.colors.skyBand } 
+            exponent: { value: 0.5 }, // Slightly adjusted for moodier sky
+            steps: { value: CONFIG.colors.skyBand }
         },
-        side: THREE.BackSide 
+        side: THREE.BackSide
     });
     const skyMesh = new THREE.Mesh(skyGeo, skyMat);
     scene.add(skyMesh);
 
-    // 2. MOON
-    const moonGeo = new THREE.SphereGeometry(15, 32, 32);
-    const moonMat = new THREE.MeshBasicMaterial({ 
+    // 2. MOON (Warm cream claymation moon with glow halo)
+    const moonGeo = new THREE.SphereGeometry(15, 16, 16); // Lower poly for clay look
+    const moonMat = new THREE.MeshBasicMaterial({
         color: CONFIG.colors.moon,
     });
     const moonMesh = new THREE.Mesh(moonGeo, moonMat);
-    moonMesh.position.set(50, 100, -200); 
+    moonMesh.position.set(50, 100, -200);
     moonMesh.name = "Moon";
     scene.add(moonMesh);
 
+    // Moon Glow Halo (Coraline-style soft glow)
+    const glowTexture = createMoonGlowTexture();
+    const glowMaterial = new THREE.SpriteMaterial({
+        map: glowTexture,
+        color: 0xf5e6c8, // Warm cream
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending
+    });
+    const moonGlow = new THREE.Sprite(glowMaterial);
+    moonGlow.scale.set(80, 80, 1); // Large soft glow
+    moonMesh.add(moonGlow);
+
     const lightSource = moonMesh.position.clone().normalize();
-    const moonLight = new THREE.DirectionalLight(CONFIG.colors.moonlight, 2.5);
+    const moonLight = new THREE.DirectionalLight(CONFIG.colors.moonlight, 2.0); // Slightly warmer
     moonLight.position.copy(moonMesh.position);
     moonLight.castShadow = true;
     moonLight.shadow.mapSize.width = 2048;
@@ -78,36 +91,58 @@ export function setupEnvironment(scene: THREE.Scene, renderer: THREE.WebGLRender
     moonLight.shadow.bias = -0.0005;
     scene.add(moonLight);
 
-    // 3. STARS (Nền xa)
+    // 3. STARS (Hand-painted dots - lower count for clay aesthetic)
     const stars = createToonStars();
     scene.add(stars);
 
-    // 4. STARDUST (Bụi bay gần - Floating Particles)
+    // 4. STARDUST (Enabled for atmospheric particles)
     const stardust = createFloatingDust();
-    // scene.add(stardust);
+    scene.add(stardust); // ENABLED for claymation atmosphere
 
-    const ambientLight = new THREE.AmbientLight(CONFIG.colors.skyBottom, 0.5);
+    // Warmer ambient for gothic feel
+    const ambientLight = new THREE.AmbientLight(0x2a2530, 0.6);
     scene.add(ambientLight);
 
     return { skyMesh, lightSource, moonMesh, stars, stardust };
 }
 
+// Create procedural moon glow texture
+function createMoonGlowTexture(): THREE.Texture {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d')!;
+
+    // Radial gradient for soft glow
+    const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gradient.addColorStop(0, 'rgba(255, 240, 220, 1)');
+    gradient.addColorStop(0.2, 'rgba(255, 230, 200, 0.6)');
+    gradient.addColorStop(0.5, 'rgba(255, 220, 180, 0.2)');
+    gradient.addColorStop(1, 'rgba(255, 210, 160, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 128, 128);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
+}
+
 function createToonStars() {
-    const starCount = 800; 
+    const starCount = 800;
     const starGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(starCount * 3);
     const sizes = new Float32Array(starCount);
 
-    for(let i=0; i<starCount * 3; i+=3) {
-        const r = 3500; 
+    for (let i = 0; i < starCount * 3; i += 3) {
+        const r = 3500;
         const theta = 2 * Math.PI * Math.random();
         const phi = Math.acos(2 * Math.random() - 1);
-        
-        positions[i] = r * Math.sin(phi) * Math.cos(theta);
-        positions[i+1] = Math.abs(r * Math.sin(phi) * Math.sin(theta)); 
-        positions[i+2] = r * Math.cos(phi);
 
-        sizes[i/3] = Math.random() * 15.0 + 15.0; 
+        positions[i] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i + 1] = Math.abs(r * Math.sin(phi) * Math.sin(theta));
+        positions[i + 2] = r * Math.cos(phi);
+
+        sizes[i / 3] = Math.random() * 15.0 + 15.0;
     }
 
     starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -149,15 +184,15 @@ function createFloatingDust() {
     const positions = new Float32Array(count * 3);
     const randoms = new Float32Array(count * 3); // Dùng để tạo chuyển động ngẫu nhiên riêng biệt
 
-    for(let i=0; i<count * 3; i+=3) {
+    for (let i = 0; i < count * 3; i += 3) {
         // Bụi bay xung quanh khu vực bè (phạm vi 40x40x20)
         positions[i] = (Math.random() - 0.5) * 40;
-        positions[i+1] = Math.random() * 20; // Chỉ bay trên mặt nước
-        positions[i+2] = (Math.random() - 0.5) * 40;
+        positions[i + 1] = Math.random() * 20; // Chỉ bay trên mặt nước
+        positions[i + 2] = (Math.random() - 0.5) * 40;
 
         randoms[i] = Math.random();
-        randoms[i+1] = Math.random();
-        randoms[i+2] = Math.random();
+        randoms[i + 1] = Math.random();
+        randoms[i + 2] = Math.random();
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));

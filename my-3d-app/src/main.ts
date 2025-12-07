@@ -1,9 +1,10 @@
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import gsap from 'gsap';
 
 // --- CÁC MODULE CỦA BẠN ---
-import { STORY_DB } from './config';
+import { STORY_DB, CONFIG } from './config';
 import { setupEnvironment } from './environment';
 import type { Environment } from './environment';
 // Import đúng hàm getWaterHeightAt
@@ -12,8 +13,9 @@ import { setupWater, getWaterHeightAt } from './water';
 type WaveObject = { update: (delta: number) => void; mesh: THREE.Object3D };
 import { setupWorld } from './world';
 
-// Định nghĩa kiểu cho sóng nước
-type WaveObject = { update: (delta: number) => void; mesh: THREE.Object3D };
+// --- STOP-MOTION CONTROL ---
+let lastRenderTime = 0;
+const FRAME_INTERVAL = 1 / CONFIG.stopMotion.fps; // ~12fps for claymation
 
 // --- BIẾN TOÀN CỤC ---
 let scene: THREE.Scene;
@@ -27,7 +29,7 @@ let env: Environment;
 
 // Biến riêng cho hiệu ứng Trái Đất
 let earthPlane: THREE.Mesh;
-let sunLight: THREE.DirectionalLight; 
+let sunLight: THREE.DirectionalLight;
 
 let accumulatedTime = 0;
 let isViewOnRaft = true;
@@ -38,55 +40,56 @@ let switchViewButton: HTMLButtonElement;
 
 // Đổi init thành async
 async function init() {
-    const container = document.body;
+    try {
+        const container = document.body;
 
-    // 1. SETUP UI
-    setupUI();
+        // 1. SETUP UI
+        setupUI();
 
-    // 2. SETUP RENDERER
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.6;
-    container.appendChild(renderer.domElement);
+        // 2. SETUP RENDERER
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.6;
+        container.appendChild(renderer.domElement);
 
-    // 3. SETUP SCENE
-    scene = new THREE.Scene();
-    // Màu nền background sẽ bị che bởi SkyBox, nhưng cứ set cho chắc
-    scene.background = new THREE.Color(0x000022);
+        // 3. SETUP SCENE
+        scene = new THREE.Scene();
+        // Màu nền background sẽ bị che bởi SkyBox, nhưng cứ set cho chắc
+        scene.background = new THREE.Color(0x000022);
 
-    env = setupEnvironment(scene, renderer);
+        env = setupEnvironment(scene, renderer);
 
-    // 4. SETUP CAMERA (TOP-DOWN VIEW)
-    // Far = 100000: Nhìn cực xa để không bị lỗi mất hình khi zoom out
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
-    camera.position.set(0, 200, 0.1); 
-    camera.lookAt(0, 0, 0); 
+        // 4. SETUP CAMERA (TOP-DOWN VIEW)
+        // Far = 100000: Nhìn cực xa để không bị lỗi mất hình khi zoom out
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
+        camera.position.set(0, 200, 0.1);
+        camera.lookAt(0, 0, 0);
 
-    // 5. CONTROLS
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.enabled = false;    
-    controls.autoRotate = false; 
-    
-    // --- BỎ GIỚI HẠN ZOOM ---
-    controls.maxDistance = Infinity; // Zoom ra vô tận
-    controls.minDistance = 0;        // Zoom xuyên vật thể
-    // -------------------------
+        // 5. CONTROLS
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enabled = false;
+        controls.autoRotate = false;
 
-    controls.maxPolarAngle = Math.PI * 0.48; // Không cho chui xuống dưới nước
-    controls.enableDamping = true;
-    
-    wave = setupWater(scene);
-    roomGroup = setupWorld(scene);
+        // --- BỎ GIỚI HẠN ZOOM ---
+        controls.maxDistance = Infinity; // Zoom ra vô tận
+        controls.minDistance = 0;        // Zoom xuyên vật thể
+        // -------------------------
 
-    window.addEventListener('resize', onWindowResize);
-    window.addEventListener('pointerdown', onPointerDown);
+        controls.maxPolarAngle = Math.PI * 0.48; // Không cho chui xuống dưới nước
+        controls.enableDamping = true;
 
-    clock = new THREE.Clock();
-    
-    const loader = document.getElementById('loader');
-    if (loader) loader.style.display = 'none';
+        wave = setupWater(scene);
+        roomGroup = setupWorld(scene);
+
+        window.addEventListener('resize', onWindowResize);
+        window.addEventListener('pointerdown', onPointerDown);
+
+        clock = new THREE.Clock();
+
+        const loader = document.getElementById('loader');
+        if (loader) loader.style.display = 'none';
 
         animate(); // Bắt đầu vòng lặp
     } catch (error) {
@@ -97,40 +100,40 @@ async function init() {
 // --- HÀM TẠO TRÁI ĐẤT (PLANE) ---
 function createEarthSystem() {
     // A. Nguồn sáng
-    sunLight = new THREE.DirectionalLight(0xffffff, 1.0); 
-    sunLight.position.set(0, 100, 0); 
+    sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    sunLight.position.set(0, 100, 0);
     scene.add(sunLight);
 
     // B. Tạo MẶT PHẲNG Trái Đất
-    const planeWidth = 200; 
-    const planeHeight = 200; 
-    const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight, 1, 1); 
-    
+    const planeWidth = 200;
+    const planeHeight = 200;
+    const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight, 1, 1);
+
     const textureLoader = new THREE.TextureLoader();
     // LƯU Ý: Hãy chắc chắn bạn đã đổi tên ảnh thành 'earth_flat.jpg' hoặc sửa đường dẫn dưới đây
-    const earthTexture = textureLoader.load('./assets/textures/earth_flat_map.jpg', 
-        undefined, 
-        undefined, 
+    const earthTexture = textureLoader.load('./assets/textures/earth_flat_map.jpg',
+        undefined,
+        undefined,
         (err) => console.log("Lỗi tải ảnh. Hãy kiểm tra đường dẫn assets/textures/...")
     );
 
     // Dùng MeshBasicMaterial để giữ nguyên màu sắc ảnh minh họa (không bị bóng tối làm đen)
-    const material = new THREE.MeshBasicMaterial({ 
+    const material = new THREE.MeshBasicMaterial({
         map: earthTexture,
         transparent: true,
         opacity: 0, // Ẩn lúc đầu
-        side: THREE.FrontSide 
+        side: THREE.FrontSide
     });
 
-    earthPlane = new THREE.Mesh(geometry, material); 
+    earthPlane = new THREE.Mesh(geometry, material);
 
     // VỊ TRÍ ĐẶT:
     // Z = -250: Nằm sau rìa nước (Rìa nước là -150)
     // Y = -50:  Nằm dưới mặt nước (để chuẩn bị mọc lên)
-    earthPlane.position.set(0, -50, -250); 
+    earthPlane.position.set(0, -50, -250);
     earthPlane.rotation.x = 0; // Dựng thẳng đứng
-    
-    earthPlane.visible = false; 
+
+    earthPlane.visible = false;
     scene.add(earthPlane);
 }
 
@@ -187,7 +190,7 @@ function startExperience() {
     setTimeout(() => startButton.style.display = 'none', 500);
 
     // 1. Đổi màu trời
-    const targetSkyColor = new THREE.Color(0x050a20); 
+    const targetSkyColor = new THREE.Color(0x050a20);
     const currentBg = new THREE.Color(scene.background as THREE.Color);
 
     gsap.to(currentBg, {
@@ -200,28 +203,28 @@ function startExperience() {
     });
 
     // 2. Trái Đất mọc lên
-    if (earthPlane) { 
+    if (earthPlane) {
         earthPlane.visible = true;
-        
+
         // Hiện dần (Fade in)
         gsap.to(earthPlane.material, { opacity: 1, duration: 3, delay: 0.5 });
-        
+
         // Mọc lên
-        gsap.to(earthPlane.position, { 
-            x: 0, 
+        gsap.to(earthPlane.position, {
+            x: 0,
             y: -1.5, // QUAN TRỌNG: Ngang mặt nước để bị che một nửa dưới
-            z: -250, 
-            duration: 6, 
-            ease: "power2.out" 
+            z: -250,
+            duration: 6,
+            ease: "power2.out"
         });
-        
+
         // Xoay nhẹ cho sinh động (nếu muốn)
         // gsap.to(earthPlane.rotation, { z: 0.05, duration: 5, ease: "power2.out" });
     }
 
     // 3. Camera bay xuống
     gsap.to(camera.position, {
-        x: 15, y: 6, z: 20, 
+        x: 15, y: 6, z: 20,
         duration: 4,
         ease: "power3.inOut",
         onUpdate: () => camera.lookAt(0, 0, 0),
@@ -270,33 +273,34 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
+
+    const currentTime = clock.getElapsedTime();
     const delta = clock.getDelta();
     accumulatedTime += delta;
 
+    // --- STOP-MOTION FRAME LIMITER ---
+    // Only render at ~12fps for claymation feel
+    if (currentTime - lastRenderTime < FRAME_INTERVAL) {
+        return; // Skip this frame
+    }
+    lastRenderTime = currentTime;
+
     if (renderer && scene && camera) {
         // Update Nước
-        if (wave) wave.update(delta);
+        if (wave) wave.update(FRAME_INTERVAL); // Use fixed delta for consistent animation
 
-        // Update Vật lý Bè
+        // Update Raft position (STATIC - no bobbing)
         if (roomGroup) {
-            const raftX = 0; 
-            const raftZ = 0; 
             const waterBaseY = -1.5;
 
-            const waveHeight = getWaterHeightAt(raftX, raftZ, accumulatedTime);
-            roomGroup.position.y += ((waterBaseY + waveHeight + 1.2) - roomGroup.position.y) * 0.1;
+            // Fixed position - no vertical movement
+            roomGroup.position.y = waterBaseY + 1.2;
 
-            const offset = 3.0;
-            const hFront = getWaterHeightAt(raftX, raftZ - offset, accumulatedTime);
-            const hBack = getWaterHeightAt(raftX, raftZ + offset, accumulatedTime);
-            const hLeft = getWaterHeightAt(raftX - offset, raftZ, accumulatedTime);
-            const hRight = getWaterHeightAt(raftX + offset, raftZ, accumulatedTime);
-
-            const targetRotX = Math.atan2(hFront - hBack, offset * 2);
-            const targetRotZ = Math.atan2(hLeft - hRight, offset * 2);
-
-            roomGroup.rotation.x += (targetRotX - roomGroup.rotation.x) * 0.05;
-            roomGroup.rotation.z += (targetRotZ - roomGroup.rotation.z) * 0.05;
+            // --- CLAYMATION JITTER ---
+            // Subtle random position jitter each frame (like stop-motion imperfections)
+            const jitter = CONFIG.stopMotion.jitterAmount;
+            roomGroup.position.x = (Math.random() - 0.5) * jitter;
+            roomGroup.position.z = (Math.random() - 0.5) * jitter;
         }
 
         // Update Sao
@@ -304,17 +308,48 @@ function animate() {
             (env.stars.material as THREE.ShaderMaterial).uniforms.uTime.value = accumulatedTime;
         }
 
-        // Update Đèn
+        // Update Đèn (slower blink for stop-motion feel)
         const antLight = scene.getObjectByName("AntLight") as THREE.PointLight;
-        if (antLight) antLight.intensity = Math.floor(accumulatedTime * 2) % 2 === 0 ? 4 : 0;
+        if (antLight) antLight.intensity = Math.floor(accumulatedTime * 1.5) % 2 === 0 ? 3 : 0;
 
         // Xoay nhẹ Trái Đất (nếu muốn nó chuyển động)
         if (earthPlane && earthPlane.visible) {
-             // earthPlane.rotation.z += 0.0001; 
+            // earthPlane.rotation.z += 0.0001; 
         }
 
         controls.update();
         renderer.render(scene, camera);
+
+        // --- FILM GRAIN OVERLAY ---
+        applyFilmGrain();
+    }
+}
+
+// --- FILM GRAIN EFFECT ---
+function applyFilmGrain() {
+    const canvas = renderer.domElement;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    // Create grain overlay
+    const grainCanvas = document.getElementById('grain-overlay') as HTMLCanvasElement;
+    if (grainCanvas) {
+        const grainCtx = grainCanvas.getContext('2d');
+        if (grainCtx) {
+            grainCtx.clearRect(0, 0, grainCanvas.width, grainCanvas.height);
+            const imageData = grainCtx.createImageData(grainCanvas.width, grainCanvas.height);
+            const data = imageData.data;
+            const intensity = CONFIG.stopMotion.grainIntensity * 255;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * intensity;
+                data[i] = noise;     // R
+                data[i + 1] = noise; // G
+                data[i + 2] = noise; // B
+                data[i + 3] = Math.abs(noise) * 0.3; // A (subtle)
+            }
+            grainCtx.putImageData(imageData, 0, 0);
+        }
     }
 }
 
@@ -338,9 +373,7 @@ function onPointerDown(event: PointerEvent) {
 
         if (STORY_DB[target.name]) {
             showStory(target.name);
-            if(target.rotation && target !== wave.mesh && target.name !== "Moon") {
-                 gsap.to(target.rotation, { y: target.rotation.y + Math.PI, duration: 1, ease: "back.out(1.7)" });
-            }
+            // Removed object rotation on click
         }
     }
 }

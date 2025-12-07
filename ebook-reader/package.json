@@ -1,5 +1,5 @@
 {
-  "name": "sehnsucht-game",
+  "name": "ebook-reader",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,14 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.4.0",
-    "@types/three": "^0.181.0",
-    "maath": "^0.10.8",
-    "next": "16.0.3",
+    "epubjs": "^0.3.93",
+    "idb": "^8.0.3",
+    "next": "16.0.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "three": "^0.181.2"
+    "react-reader": "^2.0.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -24,7 +22,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.0.3",
+    "eslint-config-next": "16.0.7",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
