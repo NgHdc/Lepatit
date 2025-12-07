@@ -164,8 +164,8 @@ export function setupWater(scene: THREE.Scene): WaveObject {
     scene.add(waterGroup);
 
     // KÍCH THƯỚC
-    const WIDTH = 60;
-    const DEPTH = 60;
+    const WIDTH = 3;
+    const DEPTH = 3;
     const HEIGHT = 15;
     
     const TARGET_SURFACE_Y = -1.5;
